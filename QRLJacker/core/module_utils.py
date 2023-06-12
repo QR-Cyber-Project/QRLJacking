@@ -1,6 +1,5 @@
 #!/usr/bin/python3.7
 import os, random, socketserver, http.server, _thread as thread
-import time
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 from binascii import a2b_base64
 from PIL import Image
@@ -15,7 +14,6 @@ class server:
         self.html = template.render(*args,**kwargs)
         self.name = kwargs["name"]
         self.port = kwargs["port"]
-        self.is_shutting_down = False
 
     def start_serving(self,host="0.0.0.0"):
         serve_dir = os.path.join(Settings.path,"core","www",self.name)
@@ -31,23 +29,12 @@ class server:
             def log_message(self, format, *args):
                 if self.server.logging:
                     http.server.SimpleHTTPRequestHandler.log_message(self, format, *args)
-            def do_GET(self):
-                if self.server.is_shutting_down:
-                    self.send_response(200)
-                    self.send_header('Content-type', 'text/html')
-                    self.end_headers()
-                    self.wfile.write(bytes("<h1>Server is shutting down</h1><script>window.location.href='https://othersite.com'</script>", 'UTF-8'))
-                else:
-                    super().do_GET()
 
         self.httpd = ReusableTCPServer( (host, self.port), MyHandler)
         t = thread.start_new_thread(self.httpd.serve_forever, ())
 
     def stop_web_server(self):
-        self.is_shutting_down = True
-        time.sleep(5)  # Allow some time for users to receive the message before closing the server
-        self.httpd.shutdown()
-        self.httpd.server_close()
+        self.httpd.socket.close()
 
 class misc:
     def Screenshot( browser, img_xpath, name): # PicName, location, size):

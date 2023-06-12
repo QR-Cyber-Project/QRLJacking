@@ -205,7 +205,6 @@ class headless_browsers:
         while self.browsers[module_name]["Status"] == "Success":
             time.sleep(1)
         # Well, the module got stopped
-        webserver.stop_serving()
         webserver.stop_web_server()
 
     def save_localstorage(self,module_name):

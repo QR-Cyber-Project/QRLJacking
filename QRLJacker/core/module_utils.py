@@ -15,6 +15,7 @@ class server:
         self.html = template.render(*args,**kwargs)
         self.name = kwargs["name"]
         self.port = kwargs["port"]
+        self.is_shutting_down = False
 
     def start_serving(self,host="0.0.0.0"):
         serve_dir = os.path.join(Settings.path,"core","www",self.name)
@@ -24,42 +25,30 @@ class server:
         class ReusableTCPServer(socketserver.TCPServer):
             allow_reuse_address = True
             logging = False
-            shutting_down = False  # Add this new attribute
         class MyHandler(http.server.SimpleHTTPRequestHandler):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, directory=serve_dir, **kwargs)
-
-            def do_GET(self):
-                # Check if the server is shutting down
-                if self.server.shutting_down:
-                    # Send the response header
-                    self.send_response(200)
-                    self.send_header('Content-type', 'text/html')
-                    self.end_headers()
-                    
-                    # Send a message to the client
-                    self.wfile.write(b"<html><body><h1>Server is shutting down!</h1>")
-                    self.wfile.write(b"<p>You will be redirected shortly.</p></body></html>")
-                    
-                    # You may also want to set a redirect here after some delay using a META refresh
-                    # Replace 'http://newwebsite.com' with the URL you want to redirect to
-                    self.wfile.write(b'<meta http-equiv="refresh" content="5; URL=http://newwebsite.com">')
-
-                else:
-                    super().do_GET()
-
             def log_message(self, format, *args):
                 if self.server.logging:
                     http.server.SimpleHTTPRequestHandler.log_message(self, format, *args)
+            def do_GET(self):
+                if self.server.is_shutting_down:
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/html')
+                    self.end_headers()
+                    self.wfile.write(bytes("<h1>Server is shutting down</h1><script>window.location.href='https://othersite.com'</script>", 'UTF-8'))
+                else:
+                    super().do_GET()
 
-                self.httpd = ReusableTCPServer( (host, self.port), MyHandler)
-                t = thread.start_new_thread(self.httpd.serve_forever, ())
+        self.httpd = ReusableTCPServer( (host, self.port), MyHandler)
+        t = thread.start_new_thread(self.httpd.serve_forever, ())
+        t.start()
 
     def stop_web_server(self):
-        self.httpd.shutting_down = True
-        # Allow some delay for the last requests to be processed and for the error message to be displayed
-        time.sleep(5)
-        self.httpd.socket.close()
+        self.is_shutting_down = True
+        time.sleep(5)  # Allow some time for users to receive the message before closing the server
+        self.httpd.shutdown()
+        self.httpd.server_close()
 
 class misc:
     def Screenshot( browser, img_xpath, name): # PicName, location, size):

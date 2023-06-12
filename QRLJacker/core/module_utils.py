@@ -12,13 +12,17 @@ class Server:
         self.templates_dir = os.path.join(Settings.path,"core","templates")
         with open(os.path.join(self.templates_dir, template_name), 'r') as f:
             self.template_str = f.read()
-        self.html = render_template_string(self.template_str, *args, **kwargs)
+        self.template_args = args
+        self.template_kwargs = kwargs
         self.name = kwargs["name"]
         self.port = kwargs["port"]
         self.app = Flask(__name__)
         self.srv = None
         self.thread = None
-        self.app.route('/')(lambda: self.html)
+        self.app.route('/')(self.serve)
+
+    def serve(self):
+        return render_template_string(self.template_str, *self.template_args, **self.template_kwargs)
 
     def start_serving(self, host="0.0.0.0"):
         self.srv = make_server(host, self.port, self.app)

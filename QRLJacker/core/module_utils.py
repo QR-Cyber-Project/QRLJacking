@@ -1,5 +1,6 @@
 #!/usr/bin/python3.7
 import os, random, socketserver, http.server, _thread as thread
+from urllib.parse import quote_plus
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 from binascii import a2b_base64
 from PIL import Image
@@ -20,6 +21,7 @@ class server:
         f = open( os.path.join(serve_dir,"index.html"),"w")
         f.write(self.html)
         f.close()
+        self.shutdown_flag = False  # Add this line to initialize the shutdown flag
         class ReusableTCPServer(socketserver.TCPServer):
             allow_reuse_address = True
             logging = False
@@ -29,11 +31,21 @@ class server:
             def log_message(self, format, *args):
                 if self.server.logging:
                     http.server.SimpleHTTPRequestHandler.log_message(self, format, *args)
+            # Override the do_GET method to add your custom logic
+            def do_GET(self):
+                if self.server.shutdown_flag:  # Here is where you check the shutdown flag
+                    self.send_response(302)
+                    new_path = '/error_page.html'+'?url='+quote_plus('http://google.com')
+                    self.send_header('Location', new_path)
+                    self.end_headers()
+                else:
+                    super().do_GET()
 
         self.httpd = ReusableTCPServer( (host, self.port), MyHandler)
         t = thread.start_new_thread(self.httpd.serve_forever, ())
 
     def stop_web_server(self):
+        self.httpd.shutdown_flag = True  # Set the flag to True when stopping the server
         self.httpd.socket.close()
 
 class misc:

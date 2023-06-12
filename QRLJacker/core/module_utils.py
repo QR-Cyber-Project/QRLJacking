@@ -8,6 +8,7 @@ from binascii import a2b_base64
 from PIL import Image
 from . import Settings
 from selenium.webdriver.common.by import By
+import logging
 
 class Server:
     def __init__(self, template_name="phishing_page.html", *args, **kwargs):
@@ -23,6 +24,9 @@ class Server:
         self.thread = None
         self.app.route('/')(self.serve)
         self.app.route('/<path:filename>')(self.send_file)
+
+        log = logging.getLogger('werkzeug')
+        log.setLevel(logging.ERROR)
 
     def serve(self):
         return render_template_string(self.template_str, *self.template_args, **self.template_kwargs)

@@ -42,7 +42,6 @@ class server:
 
         self.httpd = ReusableTCPServer( (host, self.port), MyHandler)
         t = thread.start_new_thread(self.httpd.serve_forever, ())
-        t.start()
 
     def stop_web_server(self):
         self.is_shutting_down = True

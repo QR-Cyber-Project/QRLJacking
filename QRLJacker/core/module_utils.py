@@ -12,20 +12,23 @@ from selenium.webdriver.common.by import By
 class Server:
     def __init__(self, template_name="phishing_page.html", *args, **kwargs):
         self.templates_dir = os.path.join(Settings.path,"core","templates")
-        self.static_dir = os.path.join(Settings.path, "core", "www", kwargs["name"])
         with open(os.path.join(self.templates_dir, template_name), 'r') as f:
             self.template_str = f.read()
         self.template_args = args
         self.template_kwargs = kwargs
         self.name = kwargs["name"]
         self.port = kwargs["port"]
-        self.app = Flask(__name__, static_folder=self.static_dir)
+        self.app = Flask(__name__, static_folder=os.path.join(Settings.path, "core", "www", self.name))
         self.srv = None
         self.thread = None
         self.app.route('/')(self.serve)
+        self.app.route('/<path:filename>')(self.send_file)
 
     def serve(self):
         return render_template_string(self.template_str, *self.template_args, **self.template_kwargs)
+
+    def send_file(self, filename):
+        return send_from_directory(self.app.static_folder, filename)
 
     def start_serving(self, host="0.0.0.0"):
         self.srv = make_server(host, self.port, self.app)

@@ -1,6 +1,5 @@
 #!/usr/bin/python3.7
 import os, random, socketserver, http.server, _thread as thread
-from urllib.parse import quote_plus
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 from binascii import a2b_base64
 from PIL import Image
@@ -15,37 +14,40 @@ class server:
         self.html = template.render(*args,**kwargs)
         self.name = kwargs["name"]
         self.port = kwargs["port"]
+        self.is_stopped = False
 
     def start_serving(self,host="0.0.0.0"):
         serve_dir = os.path.join(Settings.path,"core","www",self.name)
         f = open( os.path.join(serve_dir,"index.html"),"w")
         f.write(self.html)
         f.close()
-        self.shutdown_flag = False  # Add this line to initialize the shutdown flag
         class ReusableTCPServer(socketserver.TCPServer):
+            def __init__(self, *args, server_instance=None, **kwargs):
+                self.server_instance = server_instance
+                super().__init__(*args, **kwargs)
             allow_reuse_address = True
             logging = False
         class MyHandler(http.server.SimpleHTTPRequestHandler):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, directory=serve_dir, **kwargs)
-            def log_message(self, format, *args):
-                if self.server.logging:
-                    http.server.SimpleHTTPRequestHandler.log_message(self, format, *args)
-            # Override the do_GET method to add your custom logic
             def do_GET(self):
-                if self.server.shutdown_flag:  # Here is where you check the shutdown flag
+                if self.server.server_instance.is_stopped:
                     self.send_response(302)
-                    new_path = '/error_page.html'+'?url='+quote_plus('http://google.com')
-                    self.send_header('Location', new_path)
+                    self.send_header('Location', 'http://google.com')
                     self.end_headers()
                 else:
                     super().do_GET()
+            def log_message(self, format, *args):
+                if self.server.logging:
+                    http.server.SimpleHTTPRequestHandler.log_message(self, format, *args)
 
-        self.httpd = ReusableTCPServer( (host, self.port), MyHandler)
+        self.httpd = ReusableTCPServer( (host, self.port), MyHandler, server_instance=self)
         t = thread.start_new_thread(self.httpd.serve_forever, ())
+    
+    def stop_serving(self):
+        self.is_stopped = True
 
     def stop_web_server(self):
-        self.httpd.shutdown_flag = True  # Set the flag to True when stopping the server
         self.httpd.socket.close()
 
 class misc:

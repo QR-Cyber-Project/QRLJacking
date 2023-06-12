@@ -200,7 +200,7 @@ class headless_browsers:
         status(f"Initializing webserver... [{module_name}]")
         self.browsers[module_name]["host"] = "http://"+host
         self.browsers[module_name]["port"] = str(port)
-        webserver = server(name=module_name,port=port)
+        webserver = Server(name=module_name,port=port)
         webserver.start_serving(host)
         while self.browsers[module_name]["Status"] == "Success":
             time.sleep(1)

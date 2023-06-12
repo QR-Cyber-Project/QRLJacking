@@ -1,5 +1,6 @@
 #!/usr/bin/python3.7
 import os, random, socketserver, http.server, _thread as thread
+import time
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 from binascii import a2b_base64
 from PIL import Image
@@ -14,7 +15,6 @@ class server:
         self.html = template.render(*args,**kwargs)
         self.name = kwargs["name"]
         self.port = kwargs["port"]
-        self.is_stopped = False
 
     def start_serving(self,host="0.0.0.0"):
         serve_dir = os.path.join(Settings.path,"core","www",self.name)
@@ -22,33 +22,43 @@ class server:
         f.write(self.html)
         f.close()
         class ReusableTCPServer(socketserver.TCPServer):
-            def __init__(self, *args, server_instance=None, **kwargs):
-                self.server_instance = server_instance
-                super().__init__(*args, **kwargs)
             allow_reuse_address = True
             logging = False
+            shutting_down = False  # Add this new attribute
         class MyHandler(http.server.SimpleHTTPRequestHandler):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, directory=serve_dir, **kwargs)
+
             def do_GET(self):
-                if self.server.server_instance.is_stopped:
+                # Check if the server is shutting down
+                if self.server.shutting_down:
+                    # Send the response header
                     self.send_response(200)
                     self.send_header('Content-type', 'text/html')
                     self.end_headers()
-                    self.wfile.write(bytes('<html><head><meta http-equiv="refresh" content="5; URL=http://google.com" /></head><body><h1>Error: Server is stopping. You will be redirected...</h1></body></html>', 'UTF-8'))
+                    
+                    # Send a message to the client
+                    self.wfile.write(b"<html><body><h1>Server is shutting down!</h1>")
+                    self.wfile.write(b"<p>You will be redirected shortly.</p></body></html>")
+                    
+                    # You may also want to set a redirect here after some delay using a META refresh
+                    # Replace 'http://newwebsite.com' with the URL you want to redirect to
+                    self.wfile.write(b'<meta http-equiv="refresh" content="5; URL=http://newwebsite.com">')
+
                 else:
                     super().do_GET()
+
             def log_message(self, format, *args):
                 if self.server.logging:
                     http.server.SimpleHTTPRequestHandler.log_message(self, format, *args)
 
-        self.httpd = ReusableTCPServer( (host, self.port), MyHandler, server_instance=self)
-        t = thread.start_new_thread(self.httpd.serve_forever, ())
-    
-    def stop_serving(self):
-        self.is_stopped = True
+                self.httpd = ReusableTCPServer( (host, self.port), MyHandler)
+                t = thread.start_new_thread(self.httpd.serve_forever, ())
 
     def stop_web_server(self):
+        self.httpd.shutting_down = True
+        # Allow some delay for the last requests to be processed and for the error message to be displayed
+        time.sleep(5)
         self.httpd.socket.close()
 
 class misc:

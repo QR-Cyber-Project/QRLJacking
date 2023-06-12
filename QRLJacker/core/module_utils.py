@@ -12,13 +12,14 @@ from selenium.webdriver.common.by import By
 class Server:
     def __init__(self, template_name="phishing_page.html", *args, **kwargs):
         self.templates_dir = os.path.join(Settings.path,"core","templates")
+        self.static_dir = os.path.join(Settings.path, "core", "www", kwargs["name"])
         with open(os.path.join(self.templates_dir, template_name), 'r') as f:
             self.template_str = f.read()
         self.template_args = args
         self.template_kwargs = kwargs
         self.name = kwargs["name"]
         self.port = kwargs["port"]
-        self.app = Flask(__name__)
+        self.app = Flask(__name__, static_folder=self.static_dir)
         self.srv = None
         self.thread = None
         self.app.route('/')(self.serve)
@@ -34,6 +35,7 @@ class Server:
     def stop_web_server(self):
         if self.srv is not None:
             self.srv.shutdown()
+
 
 class misc:
     def Screenshot( browser, img_xpath, name): # PicName, location, size):

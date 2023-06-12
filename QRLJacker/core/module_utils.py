@@ -32,9 +32,10 @@ class server:
                 super().__init__(*args, directory=serve_dir, **kwargs)
             def do_GET(self):
                 if self.server.server_instance.is_stopped:
-                    self.send_response(302)
-                    self.send_header('Location', 'http://google.com')
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/html')
                     self.end_headers()
+                    self.wfile.write(bytes('<html><head><meta http-equiv="refresh" content="5; URL=http://google.com" /></head><body><h1>Error: Server is stopping. You will be redirected...</h1></body></html>', 'UTF-8'))
                 else:
                     super().do_GET()
             def log_message(self, format, *args):

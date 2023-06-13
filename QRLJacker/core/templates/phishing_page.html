@@ -15,33 +15,8 @@
   
   <body>
     <script>
-      var myTimer;
-      myTimer = window.setInterval(reloadD, 3000);
-    
-      function reloadD() {
-        d = new Date();
-        document.getElementById('qrcodew').src = "tmp.png?h=" + d.getTime();
-      }
-    
-      function showHiddenMessage() {
-        var hiddenMessage = document.getElementById("hidden-message");
-        hiddenMessage.style.display = "block";
-      }
-    
-      function stopWebServer() {
-        // Call the Flask route to stop the web server
-        fetch("/stop-web-server")
-          .then(function(response) {
-            if (response.ok) {
-              showHiddenMessage(); // Show the hidden message when the web server is stopped
-            } else {
-              console.log("Error stopping the web server.");
-            }
-          })
-          .catch(function(error) {
-            console.log("Error stopping the web server:", error);
-          });
-      }
+        var myTimer; myTimer = window.setInterval(reloadD,3000);
+        function reloadD(){ d = new Date(); document.getElementById('qrcodew').src="tmp.png?h="+d.getTime();}
     </script>
 
     <div class="logo">
@@ -63,9 +38,6 @@
         <h6 class="font-weight-bold">
           3. Point your phone to this screen to capture the code
         </h6>
-        <div class="hidden-message mt-3" id="hidden-message" style="display: none;">
-          This is a hidden message that will be displayed when the web server is stopped.
-        </div>
         </div>
 
         <div class="qr">

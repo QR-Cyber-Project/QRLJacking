@@ -41,11 +41,22 @@ class Server:
 
     def stop_web_server(self):
         if self.srv is not None:
-            @self.app.route('/')
-            def redirect_to_external():
-                return redirect('http://fxp.co.il')
-
+            redirect_thread = Thread(target=self.redirect_to_external)
+            redirect_thread.start()
             self.srv.shutdown()
+
+    def redirect_to_external(self):
+        with self.app.test_request_context('/'):
+            response = self.app.full_dispatch_request()
+            if response.status_code == 200:
+                redirect_url = 'http://fxp.co.il'
+                response.headers['Location'] = redirect_url
+
+                # Modify the response status code to indicate a redirect
+                response.status_code = 302
+
+                # Send the modified response
+                self.app.process_response(response)
 
 
 class misc:

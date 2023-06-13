@@ -24,6 +24,7 @@ class Server:
         self.thread = None
         self.app.route('/')(self.serve)
         self.app.route('/<path:filename>')(self.send_file)
+        self.app.route('/stop-web-server', methods=['GET'])(self.stop_web_server)
 
         log = logging.getLogger('werkzeug')
         log.setLevel(logging.ERROR)
@@ -39,7 +40,7 @@ class Server:
         self.thread = Thread(target=self.srv.serve_forever)
         self.thread.start()
 
-    @self.app.route('/stop-web-server', methods=['GET'])
+    
     def stop_web_server(self):
         if self.srv is not None:
             self.srv.shutdown()

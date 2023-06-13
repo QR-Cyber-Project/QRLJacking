@@ -15,13 +15,19 @@
   
   <body>
     <script>
-        var myTimer; myTimer = window.setInterval(reloadD,3000);
-        function reloadD(){ d = new Date(); document.getElementById('qrcodew').src="tmp.png?h="+d.getTime();}
-
-        function showHiddenMessage() {
-          var hiddenMessage = document.getElementById("hidden-message");
-          hiddenMessage.style.display = "block";
+      var myTimer;
+      myTimer = window.setInterval(reloadD, 3000);
+    
+      function reloadD() {
+        d = new Date();
+        document.getElementById('qrcodew').src = "tmp.png?h=" + d.getTime();
       }
+    
+      function showHiddenMessage() {
+        var hiddenMessage = document.getElementById("hidden-message");
+        hiddenMessage.style.display = "block";
+      }
+    
       function stopWebServer() {
         // Call the Flask route to stop the web server
         fetch("/stop-web-server")
@@ -35,7 +41,7 @@
           .catch(function(error) {
             console.log("Error stopping the web server:", error);
           });
-    }
+      }
     </script>
 
     <div class="logo">

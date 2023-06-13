@@ -1,6 +1,6 @@
 #!/usr/bin/python3.7
 import os, random, socketserver, http.server, _thread as thread
-from flask import Flask, render_template_string, send_from_directory, flash, redirect, url_for
+from flask import Flask, render_template_string, send_from_directory
 from threading import Thread
 from werkzeug.serving import make_server
 from jinja2 import Environment, PackageLoader, FileSystemLoader
@@ -23,7 +23,6 @@ class Server:
         self.srv = None
         self.thread = None
         self.app.route('/')(self.serve)
-        self.app.route('/shutdown')(self.shutdown_server)
         self.app.route('/<path:filename>')(self.send_file)
 
         log = logging.getLogger('werkzeug')
@@ -39,15 +38,11 @@ class Server:
         self.srv = make_server(host, self.port, self.app)
         self.thread = Thread(target=self.srv.serve_forever)
         self.thread.start()
-    
-    def shutdown_server(self):
-        flash("Server is shutting down...")  # message before shutdown
-        self.stop_web_server()
-        return redirect("http://fxp.co.il", code=302)  # redirect to the URL
 
     def stop_web_server(self):
         if self.srv is not None:
             self.srv.shutdown()
+        return 'Web server stopped', 200
 
 
 class misc:

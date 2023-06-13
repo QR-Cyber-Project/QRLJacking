@@ -39,7 +39,7 @@ class Server:
         self.thread = Thread(target=self.srv.serve_forever)
         self.thread.start()
 
-    @app.route('/stop-web-server', methods=['GET'])
+    @self.app.route('/stop-web-server', methods=['GET'])
     def stop_web_server(self):
         if self.srv is not None:
             self.srv.shutdown()
